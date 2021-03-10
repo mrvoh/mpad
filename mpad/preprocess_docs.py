@@ -5,6 +5,7 @@ from gensim.models.keyedvectors import KeyedVectors
 from collections import Counter, OrderedDict
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
+from skmultilearn.model_selection import iterative_train_test_split
 
 
 def load_word2vec(fname, word2idx):
@@ -37,7 +38,7 @@ def clean_str(s):
     return s.strip().lower().split()
 
 
-def load_file(filename):
+def load_file_multiclass(filename):
     """
     Loads a tab separated file with a single label
     """
@@ -49,6 +50,36 @@ def load_file(filename):
             content = line.split('\t')
             labels.append(content[0])
             docs.append(content[1][:-1])
+
+    return docs, labels
+
+
+def load_file_multilabel(filename):
+    """
+    Loads a tab separated file with multiple labels.
+    First K - 1 columns are binary encoded labels, final column the text of the doc
+    """
+    labels = []
+    docs = []
+    with open(filename, encoding='utf8', errors='ignore') as f:
+        for ix, line in enumerate(f):
+
+            content = line.split('\t')
+            if ix == 0:
+                n_columns = len(content)
+            else:
+                assert n_columns == len(content), "Expected {} columns when reading file {}, got {} columns".format(n_columns, filename, len(content))
+            # Text is first field
+            docs.append(content[-1][:-1])
+
+            try:
+                label = [float(x) for x in content[:-1]]
+            except ValueError:
+                print("WARNING: Line {} of file {} contains an invalid label, not convertible to float. \n \
+                      Contents of line: {}".format(ix, filename, content[:-1]))
+                continue
+
+            labels.append(label)
 
     return docs, labels
 
@@ -68,16 +99,37 @@ def encode_multi_class_labels(labels):
 
     return y, nclass
 
+def encode_multi_label_labels(labels):
+
+    labels = np.array(labels)
+    n_labels = labels.shape[1]
+    return labels, n_labels
+
+
 def multi_class_train_test_split(X, y, test_size):
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size = test_size, random_state = 42)
+        X,
+        y,
+        test_size=test_size,
+        random_state=42
+    )
+
+    return X_train, X_test, y_train, y_test
+
+def multi_label_train_test_split(X, y, test_size):
+
+    X_train, X_test, y_train, y_test = iterative_train_test_split(
+        X,
+        y,
+        test_size=test_size,
+        random_state=42
+    )
 
     return X_train, X_test, y_train, y_test
 
 
-
-class CorpusPreProcessor():
+class CorpusPreProcessor:
     def __init__(self, min_freq_word = 1, multi_label=False):
 
         self.docs = []
@@ -89,7 +141,10 @@ class CorpusPreProcessor():
     def load_clean_corpus(self, in_path):
 
         # Load in the raw docs
-        docs, labels = load_file(in_path)
+        if self.multi_label:
+            docs, labels = load_file_multilabel(in_path)
+        else:
+            docs, labels = load_file_multiclass(in_path)
 
         # Clean the docs
         docs = [self.clean_doc(doc) for doc in docs]
@@ -109,23 +164,32 @@ class CorpusPreProcessor():
 
     def split_corpus(self, docs, labels, test_size):
 
-        if not self.multi_label:
-            # Multi-class train/test split
-            return multi_class_train_test_split(docs, labels, test_size=test_size)
+        assert 0 < test_size < 1, "Test size must be between 0 and 1 to create a dataset split."
+        if self.multi_label:
+            X_train, X_test, y_train, y_test = multi_label_train_test_split(
+                docs=docs,
+                labels=labels,
+                test_size=test_size
+            )
         else:
-            raise NotImplementedError()
+            # Multi-class train/test split
+            X_train, X_test, y_train, y_test = multi_class_train_test_split(
+                docs=docs,
+                labels=labels,
+                test_size=test_size
+            )
+
+        return X_train, X_test, y_train, y_test
+
 
     def process_labels(self, labels):
         # First only implement for multi-class classification
-        if not self.multi_label:
-            y, n_labels = encode_multi_class_labels(labels)
+        if self.multi_label:
+            y, n_labels = encode_multi_label_labels(labels)
         else:
-            raise NotImplementedError()
+            y, n_labels = encode_multi_class_labels(labels)
 
         return y, n_labels
-
-
-
 
     def clean_doc(self, doc):
         return clean_str(doc)
