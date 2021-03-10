@@ -22,7 +22,7 @@ if __name__ == "__main__":
         # Load dataset
         ######################################
         corpus_prepper = CorpusPreProcessor(
-            min_freq_word=1,
+            min_freq_word=args.min_freq_word,
             multi_label=False
         )
         # Read data
@@ -69,19 +69,27 @@ if __name__ == "__main__":
         # Initiate model
         ######################################
 
-        learner.init_model(
-            args.model_type,
-            lr=args.lr,
-            n_feat=embeddings.shape[1],
-            n_message_passing=args.message_passing_layers,
-            n_hid=args.hidden,
-            n_penultimate=args.penultimate,
-            n_class=n_labels,
-            dropout=args.dropout,
-            embeddings=embeddings,
-            use_master_node=args.use_master_node
+        if args.pretrained_model is None:
+            # Initialize a new model
+            learner.init_model(
+                args.model_type,
+                lr=args.lr,
+                n_feat=embeddings.shape[1],
+                n_message_passing=args.message_passing_layers,
+                n_hid=args.hidden,
+                n_penultimate=args.penultimate,
+                n_class=n_labels,
+                dropout=args.dropout,
+                embeddings=embeddings,
+                use_master_node=args.use_master_node
 
-        )
+            )
+        else:
+            # Load pretrained
+            learner.load_model(
+                path=args.pretrained_model,
+                lr=args.lr
+            )
 
         ######################################
         # Start training
@@ -107,11 +115,17 @@ if __name__ == "__main__":
     if args.do_evaluate:
 
         if args.do_train:
+            print("Loading best model to infer test set...")
             learner.load_best_model()
         else: # Load other pretrained model
+            assert args.pretrained_model is not None, "--pretrained-model must be given when --do-train is False and --do-evaluate is True"
+            print("Loading pretrained model for evaluation...")
             learner.load_model(args.pretrained_model)
 
-        print("Loading best model to infer test set...")
+        ######################################
+        # Load dataset
+        ######################################
+
 
 
 

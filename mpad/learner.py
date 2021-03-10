@@ -27,6 +27,7 @@ class Learner:
 
 		self.epoch = -1
 		self.model_save_dir = None
+		self.model_args = None
 		self.log_dir = None
 
 		self.best_model_path = os.path.join(self.model_save_dir, self.experiment_name + "_best.pt")
@@ -42,11 +43,15 @@ class Learner:
 		else:
 			raise AssertionError("Currently only MPAD is supported as model")
 
+		self.model_args = kwargs
+
 		self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
 		self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=50, gamma=0.5)
 
 		self.criterion = torch.nn.CrossEntropyLoss()
 
+	def init_learner(self):
+		pass
 
 	def train_epoch(self, dataloader, eval_every):
 		self.epoch += 1
@@ -95,10 +100,10 @@ class Learner:
 
 	def save_model(self, is_best):
 
-		#TODO: save model kwargs in dict
 		to_save = {
 			'experiment_name':self.experiment_name,
 			'epoch':self.epoch,
+			'model_args':self.model_args,
 			'state_dict':self.model.state_dict(),
 			'optimizer':self.optimizer.state_dict(),
 		}
@@ -106,25 +111,27 @@ class Learner:
 		save_path = os.path.join(self.model_save_dir, self.experiment_name+"_{}.pt".format(self.epoch))
 		torch.save(to_save, save_path)
 
-
 		if is_best:
 			# Save best model separately
 			torch.save(to_save, self.best_model_path)
 
-	def load_model(self, path):
+	def load_model(self, path, lr=0.1):
 
 		to_load = torch.load(path)
 
-		#TODO: init model via class method
 		self.epoch = to_load['epoch']
+
+		self.init_model(
+			model_type='mpad',
+			lr=lr,
+			**to_load['model_args'] # pass as kwargs
+		)
 		self.model.load_state_dict(to_load['state_dict'])
 		self.optimizer.load_state_dict(to_load['optimizer'])
 
 	def load_best_model(self):
 		# Load the best model of the current experiment
 		self.load_model(self.best_model_path)
-
-
 
 	def evaluate(self, dataloader):
 

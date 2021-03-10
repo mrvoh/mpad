@@ -20,6 +20,8 @@ def get_args():
                         help='Initial learning rate.')
     parser.add_argument('--percentage_dev', type=float, default=0.1,
                         help='Initial learning rate.')
+    parser.add_argument('--min-freq-word', type=int, default=1,
+                        help='Minimum frequency of a word for it to get its own word embedding.')
     parser.add_argument('--hidden', type=int, default=64,
                         help='Number of hidden units.')
     parser.add_argument('--penultimate', type=int, default=64,
