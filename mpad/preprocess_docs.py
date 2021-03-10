@@ -1,5 +1,6 @@
 import re
 import os
+import json
 import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from collections import Counter, OrderedDict
@@ -78,13 +79,29 @@ def multi_class_train_test_split(X, y, test_size):
 
 
 class CorpusPreProcessor():
-    def __init__(self, min_freq_word = 1, multi_label=False):
+    def __init__(self, min_freq_word = 1, multi_label=False, word2idx_path=None):
 
         self.docs = []
         self.labels = []
-        self.word2idx = OrderedDict()
+        self.word2idx_path = word2idx_path
+
+        try:
+            with open(word2idx_path, 'r', encoding='utf-8') as f:
+                self.word2idx = json.load(f, object_pairs_hook=OrderedDict)
+            print("Loaded existing word2idx from {}".format(word2idx_path))
+        except IOError:
+            print("Initializing new word2idx")
+            self.word2idx = OrderedDict()
+
         self.min_freq_word = min_freq_word
         self.multi_label = multi_label
+
+    def save_word2idx(self, path=None):
+
+        path = self.word2idx_path if path is None else path
+
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(self.word2idx, f)
 
     def load_clean_corpus(self, in_path):
 
@@ -94,13 +111,18 @@ class CorpusPreProcessor():
         # Clean the docs
         docs = [self.clean_doc(doc) for doc in docs]
 
-        # Extract the vocab
-        word_counter = Counter([word for doc in docs for word in doc])
-        for ix, (word, count) in enumerate(word_counter.most_common()):
-            if count >= self.min_freq_word:
-                self.word2idx[word] = ix
-            else:
-                break
+        if len(self.word2idx) == 0:
+            print("Extracting the vocabulary from the corpus... ", end="", flush=True)
+            # Extract the vocab
+            word_counter = Counter([word for doc in docs for word in doc])
+            for ix, (word, count) in enumerate(word_counter.most_common()):
+                if count >= self.min_freq_word:
+                    self.word2idx[word] = ix
+                else:
+                    break
+            # Save the word mapping
+            self.save_word2idx()
+            print("Done! Found {} words occuring more than {} time(s).".format(len(self.word2idx), self.min_freq_word))
 
         # Convert labels
         labels, n_labels = self.process_labels(labels)

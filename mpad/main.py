@@ -1,3 +1,6 @@
+import json
+from collections import OrderedDict
+
 from parser_utils import get_args
 from preprocess_docs import CorpusPreProcessor
 from dataloader import DocumentGraphDataset
@@ -16,21 +19,33 @@ if __name__ == "__main__":
         multi_label=False
     )
 
+    word2idx = None
+    # Load pretrained model
+    if args.pretrained_model is not None:
+
+        assert args.path_to_word2idx is not None, "The word2idx path must be given when a pretrained model is loaded"
+        learner.load_model(args.pretrained_model, lr=args.lr)
+
+    ######################################
+    # Initiate corpus prepper
+    ######################################
+    corpus_prepper = CorpusPreProcessor(
+        min_freq_word=args.min_freq_word,
+        multi_label=False,
+        word2idx_path=args.path_to_word2idx
+    )
+
     if args.do_train:
 
         ######################################
         # Load dataset
         ######################################
-        corpus_prepper = CorpusPreProcessor(
-            min_freq_word=args.min_freq_word,
-            multi_label=False
-        )
+        print("Loading dataset...", end="", flush=False)
         # Read data
         docs, labels, n_labels, word2idx = corpus_prepper.load_clean_corpus(args.path_to_dataset)
         # Split into train/val
         train_docs, dev_docs, train_labels, dev_labels = corpus_prepper.split_corpus(docs, labels, args.percentage_dev)
-        # Load embeddings
-        embeddings = corpus_prepper.load_embeddings(args.path_to_embeddings, word2idx, embedding_type='word2vec')
+
 
         # Instantiate dataloader
         dataset_train = DocumentGraphDataset(
@@ -65,11 +80,19 @@ if __name__ == "__main__":
             drop_last=False
         )
 
+        print("Done!")
+
         ######################################
         # Initiate model
         ######################################
 
         if args.pretrained_model is None:
+            # Load embeddings
+            embeddings = corpus_prepper.load_embeddings(
+                f_path=args.path_to_embeddings,
+                vocab=word2idx,
+                embedding_type='word2vec'
+            )
             # Initialize a new model
             learner.init_model(
                 args.model_type,
@@ -82,7 +105,6 @@ if __name__ == "__main__":
                 dropout=args.dropout,
                 embeddings=embeddings,
                 use_master_node=args.use_master_node
-
             )
         else:
             # Load pretrained
@@ -97,12 +119,12 @@ if __name__ == "__main__":
 
         eval_every = len(dataloader_train) if args.eval_every == 'epoch' else int(args.eval_every)
 
+        print("Start training...")
         for epoch in range(args.epochs):
 
             learner.train_epoch(
                 dataloader_train,
-                eval_every=eval_every,
-                batch_size=args.batch_size
+                eval_every=eval_every
             )
 
             learner.evaluate(
@@ -119,14 +141,35 @@ if __name__ == "__main__":
             learner.load_best_model()
         else: # Load other pretrained model
             assert args.pretrained_model is not None, "--pretrained-model must be given when --do-train is False and --do-evaluate is True"
-            print("Loading pretrained model for evaluation...")
+            # print("Loading pretrained model for evaluation...")
             learner.load_model(args.pretrained_model)
 
         ######################################
         # Load dataset
         ######################################
+        # Read data
+        test_docs, test_labels, n_labels, word2idx = corpus_prepper.load_clean_corpus(args.path_to_test_set)
 
+        dataset_test = DocumentGraphDataset(
+            docs=test_docs,
+            labels=test_labels,
+            word2idx=word2idx,
+            #TODO: can these go wrong when pretrained model is loaded?
+            window_size=args.window_size,
+            use_master_node=args.use_master_node,
+            normalize_edges=args.normalize,
+            use_directed_edges=args.directed
+        )
 
+        dataloader_test = dataset_test.to_dataloader(
+            batch_size=args.batch_size,
+            shuffle=False,
+            drop_last=False
+        )
+
+        learner.evaluate(
+            dataloader_test
+        )
 
 
 

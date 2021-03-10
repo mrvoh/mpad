@@ -24,13 +24,16 @@ class Learner:
 		self.writer = None
 		self.train_step = 0
 		self.multi_label = multi_label
+		self.best_score = 0
 
 		self.epoch = -1
-		self.model_save_dir = None
+		self.model_save_dir = os.path.join(experiment_name, 'models')
+		self.model_type = None
 		self.model_args = None
 		self.log_dir = None
 
-		self.best_model_path = os.path.join(self.model_save_dir, self.experiment_name + "_best.pt")
+		os.makedirs(self.model_save_dir, exist_ok=True)
+		self.best_model_path = os.path.join(self.model_save_dir, "model_best.pt")
 
 
 	def init_model(self,
@@ -38,6 +41,9 @@ class Learner:
 				   lr=0.1,
 				   **kwargs
 				   ):
+		# Store model type
+		self.model_type = model_type.lower()
+		# Initiate model
 		if model_type.lower() == 'mpad':
 			self.model = MPAD(**kwargs)
 		else:
@@ -49,9 +55,6 @@ class Learner:
 		self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=50, gamma=0.5)
 
 		self.criterion = torch.nn.CrossEntropyLoss()
-
-	def init_learner(self):
-		pass
 
 	def train_epoch(self, dataloader, eval_every):
 		self.epoch += 1
@@ -89,19 +92,19 @@ class Learner:
 
 	def compute_metrics(self, y_pred, y_true):
 
-		if not self.multi_label:
-			y_pred = np.argmax(y_pred, axis=1)
-
-			class_report = classification_report(y_true, y_pred)
-			print(class_report)
-		else:
+		if self.multi_label:
 			raise NotImplementedError()
-
+		else:
+			# Compute weighted average of F1 score
+			y_pred = np.argmax(y_pred, axis=1)
+			class_report = classification_report(y_true, y_pred, output_dict=True)
+			return class_report['weighted avg']['f1-score']
 
 	def save_model(self, is_best):
 
 		to_save = {
 			'experiment_name':self.experiment_name,
+			'model_type':self.model_type,
 			'epoch':self.epoch,
 			'model_args':self.model_args,
 			'state_dict':self.model.state_dict(),
@@ -122,7 +125,7 @@ class Learner:
 		self.epoch = to_load['epoch']
 
 		self.init_model(
-			model_type='mpad',
+			model_type=to_load['model_type'],
 			lr=lr,
 			**to_load['model_args'] # pass as kwargs
 		)
@@ -133,7 +136,7 @@ class Learner:
 		# Load the best model of the current experiment
 		self.load_model(self.best_model_path)
 
-	def evaluate(self, dataloader):
+	def evaluate(self, dataloader, save_model=True):
 
 		self.model.eval()
 		y_pred = []
@@ -166,5 +169,12 @@ class Learner:
 		######################################
 		# Compute metrics
 		######################################
-		self.compute_metrics(y_pred, y_true)
+		f1 = self.compute_metrics(y_pred, y_true)
+
+		if f1 > self.best_score and save_model:
+			print("Saving new best model with F1 score {:.03f}".format(f1))
+			self.best_score = f1
+			self.save_model(is_best=True)
+		else:
+			print("Current score: {:.03f}, previous best: {:.03f}".format(f1, self.best_score))
 

@@ -4,16 +4,26 @@ import torch
 def get_args():
     # Training settings
     parser = argparse.ArgumentParser()
-    parser.add_argument('--experiment-name', default='datasets/subjectivity.txt',
+    parser.add_argument('--experiment-name', default='test_experiment',
                         help='Path to the dataset.')
     parser.add_argument('--model-type', default='MPAD',
                         help='Path to the dataset.')
     parser.add_argument('--path-to-dataset', default='datasets/subjectivity.txt',
                         help='Path to the dataset.')
+    parser.add_argument('--path-to-test-set', default='datasets/subjectivity.txt',
+                        help='Path to the dataset.')
     parser.add_argument('--path-to-embeddings', default='GoogleNews-vectors-negative300.bin',
+                        help='Path to the to the word2vec binary file.')
+    parser.add_argument('--path-to-word2idx', default='word2idx.json',
                         help='Path to the to the word2vec binary file.')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='Disables CUDA training.')
+    parser.add_argument('--do-train', action='store_true', default=False,
+                        help='Disables CUDA training.')
+    parser.add_argument('--do-evaluate', action='store_true', default=True,
+                        help='Disables CUDA training.')
+    parser.add_argument('--pretrained-model', default=None,
+                        help='Path to the to a model checkpoint to use for inference or continue training from')
     parser.add_argument('--epochs', type=int, default=200,
                         help='Number of epochs to train.')
     parser.add_argument('--lr', type=float, default=0.001,
@@ -43,7 +53,7 @@ def get_args():
     parser.add_argument('--patience', type=int, default=20,
                         help='Number of epochs to wait if no improvement during training.')
     parser.add_argument('--eval-every', default='epoch',
-                        help='Number of epochs to wait if no improvement during training.')
+                        help='Number of update steps after which to start evaluating, if "epoch" is chosen, the full train set will be iterated over.')
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
 
