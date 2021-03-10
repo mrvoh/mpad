@@ -9,7 +9,7 @@ class MPAD(nn.Module):
         self.n_message_passing = n_message_passing
         self.embedding = nn.Embedding(embeddings.shape[0], embeddings.shape[1])
         self.embedding.weight.data.copy_(torch.from_numpy(embeddings))
-        self.embedding.weight.requires_grad = False
+        self.embedding.weight.requires_grad = True
 
         self.mps = torch.nn.ModuleList()
         self.atts = torch.nn.ModuleList()

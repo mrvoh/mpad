@@ -4,6 +4,7 @@ from torch import optim
 from tqdm import tqdm
 import numpy as np
 from sklearn.metrics import classification_report
+import os
 
 def accuracy(output, labels):
     preds = output.max(1)[1].type_as(labels)
@@ -11,10 +12,11 @@ def accuracy(output, labels):
     correct = correct.sum()
     return correct / len(labels)
 
-class Learner:
 
+class Learner:
 	def __init__(self, experiment_name, device, multi_label):
 
+		self.experiment_name = experiment_name
 		self.model = None
 		self.optimizer = None
 		self.scheduler = None
@@ -22,6 +24,13 @@ class Learner:
 		self.writer = None
 		self.train_step = 0
 		self.multi_label = multi_label
+
+		self.epoch = -1
+		self.model_save_dir = None
+		self.log_dir = None
+
+		self.best_model_path = os.path.join(self.model_save_dir, self.experiment_name + "_best.pt")
+
 
 	def init_model(self,
 				   model_type='mpad',
@@ -39,8 +48,8 @@ class Learner:
 		self.criterion = torch.nn.CrossEntropyLoss()
 
 
-	def train_epoch(self, dataloader, eval_every, batch_size):
-
+	def train_epoch(self, dataloader, eval_every):
+		self.epoch += 1
 		self.model.train()
 		total_iters = -1
 
@@ -84,8 +93,38 @@ class Learner:
 			raise NotImplementedError()
 
 
-	def save_model(self):
-		pass
+	def save_model(self, is_best):
+
+		#TODO: save model kwargs in dict
+		to_save = {
+			'experiment_name':self.experiment_name,
+			'epoch':self.epoch,
+			'state_dict':self.model.state_dict(),
+			'optimizer':self.optimizer.state_dict(),
+		}
+		# Save model indexed by epoch nr
+		save_path = os.path.join(self.model_save_dir, self.experiment_name+"_{}.pt".format(self.epoch))
+		torch.save(to_save, save_path)
+
+
+		if is_best:
+			# Save best model separately
+			torch.save(to_save, self.best_model_path)
+
+	def load_model(self, path):
+
+		to_load = torch.load(path)
+
+		#TODO: init model via class method
+		self.epoch = to_load['epoch']
+		self.model.load_state_dict(to_load['state_dict'])
+		self.optimizer.load_state_dict(to_load['optimizer'])
+
+	def load_best_model(self):
+		# Load the best model of the current experiment
+		self.load_model(self.best_model_path)
+
+
 
 	def evaluate(self, dataloader):
 
