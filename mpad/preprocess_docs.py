@@ -23,18 +23,24 @@ def load_word2vec(fname, word2idx):
 
 
 def clean_str(s):
+
+    # Replace all characters not common in English language
+    # This might have to be updated later for multilingual support
     s = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", s)
+    # Pull apart contractions for better matching of words with pretrained embeddings
     s = re.sub(r"\'s", " 's", s)
     s = re.sub(r"\'ve", " 've", s)
     s = re.sub(r"n\'t", " n't", s)
     s = re.sub(r"\'re", " 're", s)
     s = re.sub(r"\'d", " 'd", s)
     s = re.sub(r"\'ll", " 'll", s)
+    # Add extra space around punctuation marks
     s = re.sub(r",", " , ", s)
     s = re.sub(r"!", " ! ", s)
     s = re.sub(r"\(", " \( ", s)
     s = re.sub(r"\)", " \) ", s)
     s = re.sub(r"\?", " \? ", s)
+    # Normalize multiple spaces to a single on
     s = re.sub(r"\s{2,}", " ", s)
     return s.strip().lower().split()
 

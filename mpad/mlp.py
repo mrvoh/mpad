@@ -15,7 +15,7 @@ class MLP(nn.Module):
 
         super(MLP, self).__init__()
 
-        self.linear_or_not = True  # default is linear model
+        self.linear_or_not = True
         self.num_layers = num_layers
 
         if num_layers < 1:
