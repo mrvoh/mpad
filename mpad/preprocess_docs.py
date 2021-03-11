@@ -12,7 +12,7 @@ def load_word2vec(fname, word2idx):
     word_vecs = np.zeros((len(word2idx) + 1, 300))
     unknown_words = set()
     model = KeyedVectors.load_word2vec_format(fname, binary=True)
-    for word in word2idx.keys(): # could also be done with enumerate
+    for word in word2idx.keys():  # could also be done with enumerate
         if word in model:
             word_vecs[word2idx[word], :] = model[word]
         else:
@@ -21,14 +21,15 @@ def load_word2vec(fname, word2idx):
     print("Existing vectors:", len(word2idx) - len(unknown_words))
     return word_vecs
 
+
 def clean_str(s):
     s = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", s)
-    s = re.sub(r"\'s", " \'s", s)
-    s = re.sub(r"\'ve", " \'ve", s)
-    s = re.sub(r"n\'t", " n\'t", s)
-    s = re.sub(r"\'re", " \'re", s)
-    s = re.sub(r"\'d", " \'d", s)
-    s = re.sub(r"\'ll", " \'ll", s)
+    s = re.sub(r"\'s", " 's", s)
+    s = re.sub(r"\'ve", " 've", s)
+    s = re.sub(r"n\'t", " n't", s)
+    s = re.sub(r"\'re", " 're", s)
+    s = re.sub(r"\'d", " 'd", s)
+    s = re.sub(r"\'ll", " 'll", s)
     s = re.sub(r",", " , ", s)
     s = re.sub(r"!", " ! ", s)
     s = re.sub(r"\(", " \( ", s)
@@ -45,13 +46,14 @@ def load_file(filename):
     labels = []
     docs = []
 
-    with open(filename, encoding='utf8', errors='ignore') as f:
+    with open(filename, encoding="utf8", errors="ignore") as f:
         for line in f:
-            content = line.split('\t')
+            content = line.split("\t")
             labels.append(content[0])
             docs.append(content[1][:-1])
 
     return docs, labels
+
 
 def encode_multi_class_labels(labels):
     """
@@ -69,24 +71,25 @@ def encode_multi_class_labels(labels):
 
     return y, nclass
 
+
 def multi_class_train_test_split(X, y, test_size):
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size = test_size, random_state = 42)
+        X, y, test_size=test_size, random_state=42
+    )
 
     return X_train, X_test, y_train, y_test
 
 
-
-class CorpusPreProcessor():
-    def __init__(self, min_freq_word = 1, multi_label=False, word2idx_path=None):
+class CorpusPreProcessor:
+    def __init__(self, min_freq_word=1, multi_label=False, word2idx_path=None):
 
         self.docs = []
         self.labels = []
         self.word2idx_path = word2idx_path
 
         try:
-            with open(word2idx_path, 'r', encoding='utf-8') as f:
+            with open(word2idx_path, "r", encoding="utf-8") as f:
                 self.word2idx = json.load(f, object_pairs_hook=OrderedDict)
             print("Loaded existing word2idx from {}".format(word2idx_path))
         except IOError:
@@ -100,7 +103,7 @@ class CorpusPreProcessor():
 
         path = self.word2idx_path if path is None else path
 
-        with open(path, 'w', encoding='utf-8') as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(self.word2idx, f)
 
     def load_clean_corpus(self, in_path):
@@ -122,7 +125,11 @@ class CorpusPreProcessor():
                     break
             # Save the word mapping
             self.save_word2idx()
-            print("Done! Found {} words occuring more than {} time(s).".format(len(self.word2idx), self.min_freq_word))
+            print(
+                "Done! Found {} words occuring more than {} time(s).".format(
+                    len(self.word2idx), self.min_freq_word
+                )
+            )
 
         # Convert labels
         labels, n_labels = self.process_labels(labels)
@@ -146,19 +153,15 @@ class CorpusPreProcessor():
 
         return y, n_labels
 
-
-
-
     def clean_doc(self, doc):
         return clean_str(doc)
 
     def get_vocab(self):
         pass
 
-    def load_embeddings(self, f_path, vocab, embedding_type='word2vec'):
+    def load_embeddings(self, f_path, vocab, embedding_type="word2vec"):
 
-        if embedding_type == 'word2vec':
+        if embedding_type == "word2vec":
             embeddings = load_word2vec(f_path, vocab)
 
         return embeddings
-

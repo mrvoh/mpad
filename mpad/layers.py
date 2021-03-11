@@ -8,6 +8,7 @@ import torch.nn.functional as F
 
 from mlp import MLP
 
+
 class MessagePassing(Module):
     """
     Simple Message Passing layer
@@ -30,11 +31,10 @@ class MessagePassing(Module):
         out = torch.spmm(adj, x)
         out = self.mlp2(out)
 
-
         z = torch.sigmoid(self.fc1_update(out) + self.fc2_update(x))
         r = torch.sigmoid(self.fc1_reset(out) + self.fc2_reset(x))
-        out = torch.tanh(self.fc1(out) + self.fc2(r*x))
-        out = (1-z)*x + z*out
+        out = torch.tanh(self.fc1(out) + self.fc2(r * x))
+        out = (1 - z) * x + z * out
         return out
 
 
@@ -53,28 +53,28 @@ class Attention(Module):
         self.fc3 = nn.Linear(nhid, nhid)
         self.softmax = nn.Softmax(dim=1)
         self.relu = nn.ReLU()
-    
+
     def forward(self, x_in):
         x = torch.tanh(self.fc1(x_in))
         x = torch.tanh(self.fc2(x))
         if self.master_node:
-            t = self.softmax(x[:,:-1,:])
+            t = self.softmax(x[:, :-1, :])
             t = t.unsqueeze(3)
-            x = x_in[:,:-1,:].repeat(1, 1, 1)
-            x = x.view(x.size()[0],x.size()[1], 1, self.nhid)
-            t = t.repeat(1, 1, 1, x_in.size()[2])*x
+            x = x_in[:, :-1, :].repeat(1, 1, 1)
+            x = x.view(x.size()[0], x.size()[1], 1, self.nhid)
+            t = t.repeat(1, 1, 1, x_in.size()[2]) * x
             t = t.view(t.size()[0], t.size()[1], -1)
             t = t.sum(1)
             t = self.relu(self.fc3(t))
-            out = torch.cat([t, x_in[:,-1,:].squeeze()], 1)
+            out = torch.cat([t, x_in[:, -1, :].squeeze()], 1)
         else:
             t = self.softmax(x)
             t = t.unsqueeze(3)
             x = x_in.repeat(1, 1, 1)
-            x = x.view(x.size()[0],x.size()[1], 1, self.nhid)
-            t = t.repeat(1, 1, 1, x_in.size()[2])*x
+            x = x.view(x.size()[0], x.size()[1], 1, self.nhid)
+            t = t.repeat(1, 1, 1, x_in.size()[2]) * x
             t = t.view(t.size()[0], t.size()[1], -1)
             t = t.sum(1)
             out = self.relu(self.fc3(t))
-            
+
         return out

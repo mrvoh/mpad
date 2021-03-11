@@ -3,8 +3,19 @@ import torch.nn as nn
 import torch.nn.functional as F
 from layers import MessagePassing, Attention
 
+
 class MPAD(nn.Module):
-    def __init__(self, n_feat, n_message_passing, n_hid, n_penultimate, n_class, dropout, embeddings, use_master_node):
+    def __init__(
+        self,
+        n_feat,
+        n_message_passing,
+        n_hid,
+        n_penultimate,
+        n_class,
+        dropout,
+        embeddings,
+        use_master_node,
+    ):
         super(MPAD, self).__init__()
         self.n_message_passing = n_message_passing
         self.embedding = nn.Embedding(embeddings.shape[0], embeddings.shape[1])
@@ -21,11 +32,11 @@ class MPAD(nn.Module):
             self.atts.append(Attention(n_hid, n_hid, use_master_node))
 
         if use_master_node:
-            self.bn = nn.BatchNorm1d(2*n_message_passing*n_hid)
-            self.fc1 = nn.Linear(2*n_message_passing*n_hid, n_penultimate)
+            self.bn = nn.BatchNorm1d(2 * n_message_passing * n_hid)
+            self.fc1 = nn.Linear(2 * n_message_passing * n_hid, n_penultimate)
         else:
-            self.bn = nn.BatchNorm1d(n_message_passing*n_hid)
-            self.fc1 = nn.Linear(n_message_passing*n_hid, n_penultimate)
+            self.bn = nn.BatchNorm1d(n_message_passing * n_hid)
+            self.fc1 = nn.Linear(n_message_passing * n_hid, n_penultimate)
 
         self.fc2 = nn.Linear(n_penultimate, n_class)
         self.dropout = nn.Dropout(dropout)
