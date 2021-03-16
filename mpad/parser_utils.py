@@ -7,13 +7,13 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--experiment-name",
-        default="datasets/subjectivity.txt",
-        help="Path to the dataset.",
+        default="test_experiment",
+        help="Name of the experiment.",
     )
     parser.add_argument("--model-type", default="MPAD", help="Path to the dataset.")
     parser.add_argument(
         "--path-to-dataset",
-        default="datasets/subjectivity.txt",
+        default="/home/mrvoh/Desktop/datasets/reuters_train.tsv",
         help="Path to the dataset.",
     )
     parser.add_argument(

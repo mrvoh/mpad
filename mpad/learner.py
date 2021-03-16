@@ -75,14 +75,10 @@ class Learner:
 
 	def compute_metrics(self, y_pred, y_true):
 
-		if not self.multi_label:
-			y_pred = np.argmax(y_pred, axis=1)
+		y_pred = np.argmax(y_pred, axis=1)
 
-			class_report = classification_report(y_true, y_pred)
-			print(class_report)
-		else:
-			raise NotImplementedError()
-
+		class_report = classification_report(y_true, y_pred)
+		print(class_report)
 
 	def save_model(self, is_best):
 
