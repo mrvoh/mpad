@@ -167,15 +167,15 @@ class CorpusPreProcessor:
 		assert 0 < test_size < 1, "Test size must be between 0 and 1 to create a dataset split."
 		if self.multi_label:
 			X_train, X_test, y_train, y_test = multi_label_train_test_split(
-				docs=docs,
-				labels=labels,
+				X=docs,
+				y=labels,
 				test_size=test_size
 			)
 		else:
 			# Multi-class train/test split
 			X_train, X_test, y_train, y_test = multi_class_train_test_split(
-				docs=docs,
-				labels=labels,
+				X=docs,
+				y=labels,
 				test_size=test_size
 			)
 
