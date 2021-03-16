@@ -14,15 +14,12 @@ class MPAD(nn.Module):
         dropout,
         embeddings,
         use_master_node,
-        multi_label=False
     ):
         super(MPAD, self).__init__()
         self.n_message_passing = n_message_passing
         self.embedding = nn.Embedding(embeddings.shape[0], embeddings.shape[1])
         self.embedding.weight.data.copy_(torch.from_numpy(embeddings))
         self.embedding.weight.requires_grad = True
-
-        self.multi_label = multi_label
 
         self.mps = torch.nn.ModuleList()
         self.atts = torch.nn.ModuleList()
@@ -65,7 +62,4 @@ class MPAD(nn.Module):
         x = self.relu(self.fc1(x))
         x = self.dropout(x)
         x = self.fc2(x)
-        if self.multi_label:
-            x = torch.sigmoid(x)
-
         return x
