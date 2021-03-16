@@ -10,7 +10,7 @@ if __name__ == "__main__":
 	######################################
 	# Initiate learner
 	######################################
-	corpus_prepper = CorpusPreProcessor(min_freq_word=1, multi_label=False)
+	corpus_prepper = CorpusPreProcessor(min_freq_word=1, multi_label=args.multi_label)
 	# Read data
 	docs, labels, n_labels, word2idx = corpus_prepper.load_clean_corpus(
 		args.path_to_dataset
@@ -59,7 +59,7 @@ if __name__ == "__main__":
 	######################################
 
 	learner = Learner(
-		experiment_name=args.experiment_name, device=device, multi_label=False
+		experiment_name=args.experiment_name, device=device, multi_label=args.multi_label
 	)
 
 	if args.pretrained_model is None:
@@ -74,7 +74,8 @@ if __name__ == "__main__":
 			n_class=n_labels,
 			dropout=args.dropout,
 			embeddings=embeddings,
-			use_master_node=args.use_master_node
+			use_master_node=args.use_master_node,
+			multi_label=args.multi_label
 
 		)
 	else:

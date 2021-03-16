@@ -39,7 +39,11 @@ class Learner:
 			self.optimizer, step_size=50, gamma=0.5
 		)
 
-		self.criterion = torch.nn.CrossEntropyLoss()
+		# Select the loss based on type of task
+		if self.multi_label:
+			self.criterion = torch.nn.BCELoss()
+		else:
+			self.criterion = torch.nn.CrossEntropyLoss()
 
 	def train_epoch(self, dataloader, eval_every):
 
@@ -55,6 +59,9 @@ class Learner:
 
 				preds = self.model(nodes, A, n_graphs)
 
+				# Reshape labels
+				if self.multi_label:
+					y = y.view(n_graphs, -1).float()
 				loss = self.criterion(preds, y)
 
 				self.optimizer.zero_grad()
@@ -75,7 +82,12 @@ class Learner:
 
 	def compute_metrics(self, y_pred, y_true):
 
-		y_pred = np.argmax(y_pred, axis=1)
+		if self.multi_label:
+			# p > 0.5 is a prediction
+			y_pred = np.round(y_pred)
+		else:
+			# Highest scoring class is prediction
+			y_pred = np.argmax(y_pred, axis=1)
 
 		class_report = classification_report(y_true, y_pred)
 		print(class_report)
@@ -132,6 +144,10 @@ class Learner:
 					A, nodes, y, n_graphs = batch
 
 					preds = self.model(nodes, A, n_graphs)
+
+					# Reshape labels
+					if self.multi_label:
+						y = y.view(n_graphs, -1).float()
 					loss = self.criterion(preds, y)
 					running_loss += loss.item()
 					# store predictions and targets

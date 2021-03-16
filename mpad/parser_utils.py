@@ -22,6 +22,14 @@ def get_args():
         help="Path to the to the word2vec binary file.",
     )
     parser.add_argument(
+        "--pretrained-model",
+        default=None,
+        help="Path to the to a model checkpoint to use for inference or continue training from",
+    )
+    parser.add_argument(
+        "--multi-label", action="store_true", default=True, help="Whether the task at hand is a multilabel classification task."
+    )
+    parser.add_argument(
         "--no-cuda", action="store_true", default=False, help="Disables CUDA training."
     )
     parser.add_argument(
@@ -31,7 +39,7 @@ def get_args():
         "--lr", type=float, default=0.001, help="Initial learning rate."
     )
     parser.add_argument(
-        "--percentage_dev", type=float, default=0.1, help="Initial learning rate."
+        "--percentage-dev", type=float, default=0.25, help="Initial learning rate."
     )
     parser.add_argument(
         "--hidden", type=int, default=64, help="Number of hidden units."

@@ -119,12 +119,18 @@ def multi_class_train_test_split(X, y, test_size):
 
 def multi_label_train_test_split(X, y, test_size):
 
-	X_train, X_test, y_train, y_test = iterative_train_test_split(
-		X,
+	# SkMultiLearn works with numpy-like matrices, so we do a little work-around
+	# by creating indices which are used to subset the total set of documents
+	doc_indices = np.arange(len(X))
+	doc_indices = np.expand_dims(doc_indices, axis=1)
+	train_indices, y_train, test_indices, y_test = iterative_train_test_split(
+		doc_indices,
 		y,
-		test_size=test_size,
-		random_state=42
+		test_size=test_size
 	)
+
+	X_train = [doc for ix, doc in enumerate(X) if ix in train_indices.squeeze()]
+	X_test = [doc for ix, doc in enumerate(X) if ix in test_indices.squeeze()]
 
 	return X_train, X_test, y_train, y_test
 
